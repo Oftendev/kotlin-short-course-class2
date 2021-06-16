@@ -14,87 +14,72 @@ import javax.swing.WindowConstants
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.time.ExperimentalTime
+import kotlin.time.ExperimentalTime  // подключение аннотации. М подключаем экспериментальную версию
 
 fun main() {
     createWindow("Klock")
 }
 
-fun createWindow(title: String) = runBlocking(Dispatchers.Swing) {
-    val window = SkiaWindow()
-    window.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-    window.title = title
-
-    window.layer.renderer = Renderer(window.layer)
-    window.layer.addMouseMotionListener(MouseMotionAdapter)
-
-    window.preferredSize = Dimension(800, 600)
-    window.minimumSize = Dimension(100,100)
-    window.pack()
-    window.layer.awaitRedraw()
-    window.isVisible = true
-}
-
-class Renderer(val layer: SkiaLayer): SkiaRenderer {
-    val typeface = Typeface.makeFromFile("fonts/JetBrainsMono-Regular.ttf")
-    val font = Font(typeface, 40f)
-    val paint = Paint().apply {
-        color = 0xff9BC730L.toInt()
-        mode = PaintMode.FILL
+class Renderer(val layer: SkiaLayer): SkiaRenderer {                                //
+    val typeface = Typeface.makeFromFile("fonts/JetBrainsMono-Regular.ttf")    //  шрифт загружаем
+    val font = Font(typeface, 40f)                                              //  размер шрифта
+    val paint = Paint().apply {                                                      // создаём кисть и функцией apply нпстраиваем
+        color = 0xff9BC730L.toInt()                                             // Ctrl + Space(
+        mode = PaintMode.FILL                                                   //  stroke - обводка, - заливка 
         strokeWidth = 1f
     }
-    val clockFill = Paint().apply {
-        color = 0xFFFFFFFF.toInt()
+    val clockFill = Paint().apply {                                             //
+        color = 0xFFFFFFFF.toInt()                                              //
     }
-    val clockFillHover = Paint().apply {
-        color = 0xFFE4FF01.toInt()
+    val clockFillHover = Paint().apply {                                        //
+        color = 0xFFE4FF01.toInt()                                              //
     }
-    val clockStroke = Paint().apply {
-        color = 0xFF000000.toInt()
-        mode = PaintMode.STROKE
-        strokeWidth = 1f
+    val clockStroke = Paint().apply {                                           //
+        color = 0xFF000000.toInt()                                              //
+        mode = PaintMode.STROKE                                                 //
+        strokeWidth = 1f                                                        //
     }
-    val clockStrokeS = Paint().apply {
-        color = 0xFFFF0000.toInt()
-        mode = PaintMode.STROKE
-        strokeWidth = 1f
+    val clockStrokeS = Paint().apply {                                          //
+        color = 0xFFFF0000.toInt()                                              //
+        mode = PaintMode.STROKE                                                 //
+        strokeWidth = 1f                                                        //
     }
-    val clockStrokeMH = Paint().apply {
-        color = 0xFF0000FF.toInt()
-        mode = PaintMode.STROKE
-        strokeWidth = 3f
+    val clockStrokeMH = Paint().apply {                                         //
+        color = 0xFF0000FF.toInt()                                              //
+        mode = PaintMode.STROKE                                                 //
+        strokeWidth = 3f                                                        //
     }
 
     @ExperimentalTime
-    override fun onRender(canvas: Canvas, width: Int, height: Int, nanoTime: Long) {
-        val contentScale = layer.contentScale
-        canvas.scale(contentScale, contentScale)
-        val w = (width / contentScale).toInt()
-        val h = (height / contentScale).toInt()
+    override fun onRender(canvas: Canvas, width: Int, height: Int, nanoTime: Long) { // нужно, чтобы nRender срабатывал только после конца своей прошлой итерации
+        val contentScale = layer.contentScale                                       // reshape
+        canvas.scale(contentScale, contentScale)                                    //
+        val w = (width / contentScale).toInt()                                      //
+        val h = (height / contentScale).toInt()                                     //
 
-        val centerX = w/2f
+        val centerX = w/2f                                                          // координаты центра
         val centerY = h/2f
-        val clockRadius = min(w, h)/2f - 5
-        val tickLen = 15f
+        val clockRadius = min(w, h)/2f - 5                                          // радиус часов
+        val tickLen = 15f                                                           // палочки на часах
 
-        displayClockFace(canvas, centerX, centerY, clockRadius, tickLen)
+        displayClockFace(canvas, centerX, centerY, clockRadius, tickLen)            // русуем часы
 
-        val now = Clock.System.now()
-        val timeZone = TimeZone.currentSystemDefault()
-        val midnight = Clock.System.todayAt(timeZone).atStartOfDayIn(timeZone)
-        val msTime = (now - midnight).inWholeMilliseconds
+        val now = Clock.System.now()                                                // определяем текущее время
+        val timeZone = TimeZone.currentSystemDefault()                              // пределяем часовой пояс
+        val midnight = Clock.System.todayAt(timeZone).atStartOfDayIn(timeZone)      // определяем полночь
+        val msTime = (now - midnight).inWholeMilliseconds                           // определяем время, прошедшее с полночи
 
-        displayClockHands(canvas, centerX, centerY, clockRadius, tickLen, msTime)
+        displayClockHands(canvas, centerX, centerY, clockRadius, tickLen, msTime)   // рисую стрелки
 
-        displayTime(canvas, now.toLocalDateTime(timeZone))
+        displayTime(canvas, now.toLocalDateTime(timeZone))                          // вывожу время
 
-        layer.needRedraw()
+        layer.needRedraw()                                                          //
     }
 
     private fun displayTime(canvas: Canvas, localDateTime: LocalDateTime) {
-        val text = format("%02d:%02d:%02d", localDateTime.hour, localDateTime.minute, localDateTime.second)
+        val text = format("%02d:%02d:%02d", localDateTime.hour, localDateTime.minute, localDateTime.second)  // форматирую текст
 
-        canvas.drawString(text, State.mouseX, State.mouseY, font, paint)
+        canvas.drawString(text, State.mouseX, State.mouseY, font, paint)  // рисую время там, где находится мышка(используется объект State)
     }
 
     private fun displayClockFace(canvas: Canvas, centerX: Float, centerY: Float, clockRadius: Float, tickLen: Float) {
@@ -102,14 +87,14 @@ class Renderer(val layer: SkiaLayer): SkiaRenderer {
         val x = centerX - clockRadius
         val y = centerY - clockRadius
 
-        val hover = distanceSq(centerX, centerY, State.mouseX, State.mouseY) <= clockRadius*clockRadius
+        val hover = distanceSq(centerX, centerY, State.mouseX, State.mouseY) <= clockRadius*clockRadius  // определяем положение курсора
 
         val fill = if (hover) clockFillHover else clockFill
 
-        val clockRect = Rect.makeXYWH(x, y, clockRadius * 2, clockRadius * 2)
+        val clockRect = Rect.makeXYWH(x, y, clockRadius * 2, clockRadius * 2)  // рисуем
         canvas.drawOval(clockRect, fill)
         canvas.drawOval(clockRect, clockStroke)
-        clockTicks(canvas, clockStroke, centerX, tickLen/3, centerY, clockRadius, 60)
+        clockTicks(canvas, clockStroke, centerX, tickLen/3, centerY, clockRadius, 60)  // рисуем минутные и часовые тики
         clockTicks(canvas, clockStroke, centerX, tickLen, centerY, clockRadius, 12)
     }
 
@@ -156,12 +141,27 @@ class Renderer(val layer: SkiaLayer): SkiaRenderer {
     }
 }
 
+fun createWindow(title: String) = runBlocking(Dispatchers.Swing) {   // "=" - то, что возвращает функция(то, что пишем после return)
+    val window = SkiaWindow()                                         // runblocking - мы ждём, когда окно создатся, приложение ни на что реагировать не будет
+    window.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE   // закрыли окно - закрыли приложение
+    window.title = title                                                //
+                                                                        //
+    window.layer.renderer = Renderer(window.layer)                      // слои окна(используем только 1 слой). И используем renderer для него(отрисовывает объекты)
+    window.layer.addMouseMotionListener(MouseMotionAdapter)             // обработка движения мыши
+                                                                        //
+    window.preferredSize = Dimension(800, 600)              //
+    window.minimumSize = Dimension(100,100)                 //
+    window.pack()                                                       //
+    window.layer.awaitRedraw()                                          //
+    window.isVisible = true                                             // делаем окно видимым
+}
+
 object State {
     var mouseX = 0f
     var mouseY = 0f
 }
 
-object MouseMotionAdapter : MouseMotionAdapter() {
+object MouseMotionAdapter : MouseMotionAdapter() {  // функция, которая вызывается при зменении мыши и измен. координаты
     override fun mouseMoved(event: MouseEvent) {
         State.mouseX = event.x.toFloat()
         State.mouseY = event.y.toFloat()
